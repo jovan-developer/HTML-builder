@@ -1,4 +1,11 @@
+const fs = require('fs');
 const path = require('path');
-const logFileContent = require('./logFileContent');
+
+function logFileContent(filePath) {
+  fs.readFile(filePath, 'utf-8', (err, data) => {
+    if (err) throw err;
+    console.log(data);
+  });
+}
 
 logFileContent(path.join(__dirname, 'text.txt'));
