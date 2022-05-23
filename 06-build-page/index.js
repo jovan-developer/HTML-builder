@@ -1,4 +1,3 @@
-
 const path = require('path');
 const fs = require('fs').promises;
 const baseFs = require('fs');
@@ -8,7 +7,6 @@ const htmlComponents = path.join(__dirname, 'components');
 const assets = path.join(__dirname, 'assets');
 const destPath = path.join(__dirname, 'project-dist');
 const mainHtml = path.join(__dirname, 'template.html');
-
 
 async function checkFileExist(filePath) {
   let result = false;
@@ -36,13 +34,15 @@ async function readFilesFromDir(pathToDir, dest, filename, searchedExt) {
       if (file.isFile()) {
         const ext = path.extname(file.name);
         if (ext === searchedExt) {
-          const fileContent = await fs.readFile(path.join(pathToDir, file.name));
+          const fileContent = await fs.readFile(
+            path.join(pathToDir, file.name)
+          );
           resultBuffer += fileContent;
         }
       }
     }
 
-    fs.appendFile(path.join(destPath, filename), resultBuffer, { flag: 'w' });
+    return await fs.appendFile(path.join(destPath, filename), resultBuffer, { flag: 'w' });
   } catch (err) {
     console.error(err);
   }
@@ -58,6 +58,7 @@ async function htmlTemplates(pathToDir, dest, filename, searchedExt) {
     if (!ifExist) {
       await fs.mkdir(dest);
       console.log(`Directory ${dest} was created`);
+
     }
 
     for (const file of files) {
@@ -66,13 +67,15 @@ async function htmlTemplates(pathToDir, dest, filename, searchedExt) {
         if (ext === searchedExt) {
           let componentName = path.basename(file.name, ext);
           const regexp = new RegExp('{{(' + componentName + ')}}', 'gi');
-          const contentFile = await fs.readFile(path.join(pathToDir, file.name));
+          const contentFile = await fs.readFile(
+            path.join(pathToDir, file.name)
+          );
           str = str.replace(regexp, contentFile.toString());
         }
       }
     }
 
-    fs.appendFile(path.join(destPath, filename), str, { flag: 'w' });
+    return await fs.appendFile(path.join(destPath, filename), str, { flag: 'w+' });
   } catch (err) {
     console.error(err);
   }
@@ -83,7 +86,6 @@ async function assetsFolder(pathToDir, dest) {
     const files = await fs.readdir(pathToDir, { withFileTypes: true });
     let ifExist = await checkFileExist(dest);
     let destFolder = dest;
-    console.log(destFolder);
 
     if (!ifExist) {
       await fs.mkdir(dest);
@@ -94,18 +96,24 @@ async function assetsFolder(pathToDir, dest) {
       console.log(file);
       if (file.isFile()) {
         const fileContent = await fs.readFile(path.join(pathToDir, file.name));
-        // path.basename(destFolder,)
-        console.log(file.name);
-        fs.appendFile(path.join(destFolder, file.name()), fileContent, { flag: 'w' });
+        fs.appendFile(path.join(destFolder, file.name), fileContent, {
+          flag: 'w',
+        });
+      } else {
+        assetsFolder(path.join(pathToDir, file.name), path.join(destFolder, file.name));
       }
     }
-
-
   } catch (err) {
     console.error(err);
   }
 }
 
-readFilesFromDir(stylesComponents, destPath, 'style.css', '.css');
-htmlTemplates(htmlComponents, destPath, 'index.html', '.html');
-assetsFolder(assets, path.join(destPath, 'assets'));
+
+
+readFilesFromDir(stylesComponents, destPath, 'style.css', '.css')
+  .then(() => {
+    htmlTemplates(htmlComponents, destPath, 'index.html', '.html');
+  })
+  .then(() => {
+    assetsFolder(assets, path.join(destPath, 'assets'));
+  });
